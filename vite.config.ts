@@ -16,7 +16,7 @@ export default defineConfig(({ mode }) => {
           rewrite: (path) => path.replace(/^\/api/, '/storefront/api/v1'),
           configure: (proxy, _options) => {
             proxy.on('proxyReq', (proxyReq, req, _res) => {
-              const domainName = env.VITE_DOMAIN_NAME || 'plera.zohoecommerce.com';
+              const domainName = env.VITE_DOMAIN_NAME || 'activepharm.zohoecommerce.com';
               proxyReq.setHeader('X-Zoho-Domain', domainName);
               proxyReq.setHeader('domain-name', domainName);
               proxyReq.setHeader('Origin', `https://${domainName}`);

@@ -1,7 +1,7 @@
 import type { ProductsResponse, Product } from '../types/product';
 import { getCartId, setCartId } from '../utils/cookies';
 
-const DOMAIN_NAME = import.meta.env.VITE_DOMAIN_NAME || 'plera.zohoecommerce.com';
+const DOMAIN_NAME = import.meta.env.VITE_DOMAIN_NAME || 'activepharm.zohoecommerce.com';
 
 // Cache for product details to prevent multiple API calls
 const productCache = new Map<string, { product: Product; timestamp: number }>();
