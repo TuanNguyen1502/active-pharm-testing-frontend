@@ -56,7 +56,7 @@ function ProductDetail() {
 
   const mainImage = product.images[selectedImageIndex] || product.images[0]
   const mainImageUrl = mainImage ? getProductImageUrl(mainImage.url) : '/placeholder-image.jpg'
-  const currency = product.currency_code || 'VND'
+  const currency = product.currency_code || 'USD'
 
   return (
     <div className="product-detail-container">

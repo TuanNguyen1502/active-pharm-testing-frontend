@@ -721,12 +721,12 @@ function Checkout() {
                       <label htmlFor={`shipping_${method.id}`}>
                         <div className="shipping-method-name">{method.name}</div>
                         <div className="shipping-method-details">
-                          <span className="shipping-method-rate">{formatPrice(method.rate)} VND</span>
+                          <span className="shipping-method-rate">{formatPrice(method.rate)} USD</span>
                           {method.delivery_time && (
                             <span className="shipping-method-time">• {method.delivery_time}</span>
                           )}
                           {method.handling_fees > 0 && (
-                            <span className="shipping-method-fees">• Handling: {formatPrice(method.handling_fees)} VND</span>
+                            <span className="shipping-method-fees">• Handling: {formatPrice(method.handling_fees)} USD</span>
                           )}
                         </div>
                       </label>
@@ -792,9 +792,9 @@ function Checkout() {
                   <div className="confirmation-shipping">
                     <p><strong>{confirmationData.shipping.name}</strong></p>
                     <p>Delivery Time: {confirmationData.shipping.delivery_time}</p>
-                    <p>Rate: {formatPrice(confirmationData.shipping.rate)} VND</p>
+                    <p>Rate: {formatPrice(confirmationData.shipping.rate)} USD</p>
                     {confirmationData.shipping.handling_fees > 0 && (
-                      <p>Handling Fees: {formatPrice(confirmationData.shipping.handling_fees)} VND</p>
+                      <p>Handling Fees: {formatPrice(confirmationData.shipping.handling_fees)} USD</p>
                     )}
                   </div>
                 ) : (
@@ -809,7 +809,7 @@ function Checkout() {
                   {confirmationData.total !== undefined && (
                     <div className="order-total">
                       <span>Total:</span>
-                      <span className="total-amount">{formatPrice(confirmationData.total)} VND</span>
+                      <span className="total-amount">{formatPrice(confirmationData.total)} USD</span>
                     </div>
                   )}
                 </div>

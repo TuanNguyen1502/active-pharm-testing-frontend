@@ -10,7 +10,7 @@ function HomePage() {
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [currency, setCurrency] = useState<string>('VND')
+  const [currency, setCurrency] = useState<string>('USD')
   const [selectedVariantId, setSelectedVariantId] = useState<string | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [isCartOpen, setIsCartOpen] = useState(false)

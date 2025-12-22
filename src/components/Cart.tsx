@@ -154,7 +154,7 @@ function Cart({ isOpen, onClose, onUpdate }: CartProps) {
                     <div className="cart-item-details">
                       <h3 className="cart-item-name">{item.name || 'Product'}</h3>
                       <div className="cart-item-price">
-                        {item.price && formatPrice(item.price)} VND
+                        {item.price && formatPrice(item.price)} USD
                       </div>
                       <div className="cart-item-quantity">
                         Quantity: {item.quantity}
@@ -179,7 +179,7 @@ function Cart({ isOpen, onClose, onUpdate }: CartProps) {
                   </div>
                   <div className="cart-summary-row cart-total">
                     <span>Total Price:</span>
-                    <span>{formatPrice(totalPrice)} VND</span>
+                    <span>{formatPrice(totalPrice)} USD</span>
                   </div>
                 </div>
                 <div className="cart-actions">
