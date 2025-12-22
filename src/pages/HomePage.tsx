@@ -92,7 +92,7 @@ function HomePage() {
   return (
     <div className="app-container">
       <header className="header">
-        <h1>Plera Store</h1>
+        <h1>ActivePharm</h1>
         <p className="subtitle">Discover our amazing products</p>
         <button 
           className="cart-icon-btn"
