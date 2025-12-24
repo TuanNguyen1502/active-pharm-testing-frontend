@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { getCartId } from '../utils/cookies'
-import { getCartItems as fetchCartItemsFromAPI, getProductImageUrl } from '../services/api'
+import { getCartItems as fetchCartItemsFromAPI } from '../services/api'
 import type { CartItem } from '../utils/cookies'
 import './Cart.css'
 
@@ -14,7 +14,6 @@ interface CartProps {
 function Cart({ isOpen, onClose, onUpdate }: CartProps) {
   const navigate = useNavigate()
   const [cartItems, setCartItems] = useState<CartItem[]>([])
-  const [isUpdating, setIsUpdating] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -61,7 +60,7 @@ function Cart({ isOpen, onClose, onUpdate }: CartProps) {
     }
   }
 
-  const handleRemoveItem = (variantId: string) => {
+  const handleRemoveItem = (_variantId: string) => {
     // TODO: Implement API call to remove item from cart
     // For now, just reload cart items
     loadCartItems()
