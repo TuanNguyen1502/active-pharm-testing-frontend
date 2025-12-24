@@ -8,14 +8,17 @@
 .back-link {
   display: inline-block;
   margin-bottom: 2rem;
-  color: #667eea;
+  color: #0066cc;
   text-decoration: none;
   font-weight: 600;
   transition: color 0.3s ease;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
 }
 
 .back-link:hover {
-  color: #764ba2;
+  color: #0052a3;
+  background-color: #e0f2fe;
 }
 
 .product-detail-content {
@@ -93,7 +96,8 @@
 }
 
 .thumbnail.active {
-  border-color: #667eea;
+  border-color: #0066cc;
+  box-shadow: 0 0 0 2px rgba(0, 102, 204, 0.2);
 }
 
 .thumbnail img {
@@ -141,7 +145,7 @@
 .product-detail-current-price {
   font-size: 2rem;
   font-weight: 700;
-  color: #667eea;
+  color: #0066cc;
 }
 
 .product-detail-description {
@@ -250,21 +254,23 @@
 .buy-now-btn {
   display: inline-block;
   padding: 1rem 2rem;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: #0066cc;
   color: white;
   text-decoration: none;
   border-radius: 8px;
   text-align: center;
   font-weight: 600;
   font-size: 1.1rem;
-  transition: opacity 0.3s ease, transform 0.2s ease;
+  transition: all 0.3s ease;
   width: 100%;
   text-align: center;
+  box-shadow: 0 2px 4px rgba(0, 102, 204, 0.2);
 }
 
 .buy-now-btn:hover {
-  opacity: 0.9;
+  background: #0052a3;
   transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 102, 204, 0.3);
 }
 
 @media (max-width: 968px) {

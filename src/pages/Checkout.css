@@ -13,7 +13,7 @@
 .back-btn {
   background: none;
   border: none;
-  color: #667eea;
+  color: #0066cc;
   font-size: 1rem;
   cursor: pointer;
   padding: 0.5rem 0;
@@ -23,16 +23,14 @@
 }
 
 .back-btn:hover {
-  color: #764ba2;
+  color: #0052a3;
 }
 
 .checkout-header h1 {
   font-size: 2.5rem;
   margin: 0 0 1rem 0;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: #0066cc;
+  font-weight: 600;
 }
 
 .checkout-steps {
@@ -51,8 +49,9 @@
 }
 
 .checkout-steps span.active {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: #0066cc;
   color: white;
+  box-shadow: 0 2px 4px rgba(0, 102, 204, 0.2);
 }
 
 .checkout-error {
@@ -120,8 +119,8 @@
 .form-group input:focus,
 .form-group select:focus {
   outline: none;
-  border-color: #667eea;
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+  border-color: #0066cc;
+  box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.1);
 }
 
 .form-group input:invalid:not(:placeholder-shown) {
@@ -145,7 +144,7 @@
   width: 20px;
   height: 20px;
   cursor: pointer;
-  accent-color: #667eea;
+  accent-color: #0066cc;
 }
 
 .form-actions {
@@ -157,20 +156,22 @@
 .submit-btn {
   width: 100%;
   padding: 1rem 2rem;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: #0066cc;
   color: white;
   border: none;
   border-radius: 8px;
   font-size: 1.1rem;
   font-weight: 600;
   cursor: pointer;
-  transition: opacity 0.3s ease, transform 0.2s ease;
+  transition: all 0.3s ease;
   font-family: inherit;
+  box-shadow: 0 2px 4px rgba(0, 102, 204, 0.2);
 }
 
 .submit-btn:hover:not(:disabled) {
-  opacity: 0.9;
+  background: #0052a3;
   transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 102, 204, 0.3);
 }
 
 .submit-btn:disabled {
@@ -201,43 +202,7 @@
   }
 }
 
-@media (prefers-color-scheme: dark) {
-  .form-section {
-    background: #1a1a1a;
-    border: 1px solid #333;
-  }
-
-  .form-section h2 {
-    color: #fff;
-    border-bottom-color: #444;
-  }
-
-  .form-group label {
-    color: #fff;
-  }
-
-  .form-group input,
-  .form-group select {
-    background: #2a2a2a;
-    border-color: #444;
-    color: #fff;
-  }
-
-  .form-group input:focus,
-  .form-group select:focus {
-    border-color: #667eea;
-  }
-
-  .checkbox-group label {
-    color: #fff;
-  }
-
-  .checkout-error {
-    background: #2a1a1a;
-    color: #fca5a5;
-    border-color: #ef4444;
-  }
-}
+/* Medical theme - keeping light mode for clean, clinical appearance */
 
 .shipping-methods {
   display: flex;
@@ -255,14 +220,14 @@
 }
 
 .shipping-method-card:hover {
-  border-color: #667eea;
-  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.2);
+  border-color: #0066cc;
+  box-shadow: 0 2px 8px rgba(0, 102, 204, 0.2);
 }
 
 .shipping-method-card.selected {
-  border-color: #667eea;
-  background: #f8f9ff;
-  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.2);
+  border-color: #0066cc;
+  background: #e0f2fe;
+  box-shadow: 0 2px 8px rgba(0, 102, 204, 0.2);
 }
 
 .shipping-method-radio {
@@ -276,7 +241,7 @@
   width: 20px;
   height: 20px;
   cursor: pointer;
-  accent-color: #667eea;
+  accent-color: #0066cc;
 }
 
 .shipping-method-radio label {
@@ -304,7 +269,7 @@
 
 .shipping-method-rate {
   font-weight: 600;
-  color: #667eea;
+  color: #0066cc;
   font-size: 1rem;
 }
 
@@ -313,25 +278,7 @@
   color: #666;
 }
 
-@media (prefers-color-scheme: dark) {
-  .shipping-method-card {
-    background: #2a2a2a;
-    border-color: #444;
-  }
-
-  .shipping-method-card.selected {
-    background: #1a1a2a;
-    border-color: #667eea;
-  }
-
-  .shipping-method-name {
-    color: #fff;
-  }
-
-  .shipping-method-details {
-    color: #ccc;
-  }
-}
+/* Medical theme - keeping light mode for clean, clinical appearance */
 
 .confirmation-address,
 .confirmation-shipping {
@@ -369,20 +316,9 @@
 }
 
 .total-amount {
-  color: #667eea;
+  color: #0066cc;
   font-size: 1.5rem;
 }
 
-@media (prefers-color-scheme: dark) {
-  .confirmation-address,
-  .confirmation-shipping,
-  .order-total {
-    background: #2a2a2a;
-  }
-
-  .confirmation-address p,
-  .confirmation-shipping p {
-    color: #fff;
-  }
-}
+/* Medical theme - keeping light mode for clean, clinical appearance */
 

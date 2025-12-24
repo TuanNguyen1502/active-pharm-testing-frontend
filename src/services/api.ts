@@ -1,46 +1,22 @@
 import type { ProductsResponse, Product } from '../types/product';
-import { getCartId, setCartId } from '../utils/cookies';
+import { getCartId, setCartId, deleteCartId } from '../utils/cookies';
 
-const DOMAIN_NAME = import.meta.env.VITE_DOMAIN_NAME || 'activepharm.zohoecommerce.com';
+const DOMAIN_NAME = import.meta.env.VITE_DOMAIN_NAME 
+const WEBHOOK_URL = import.meta.env.VITE_WEBHOOK_URL 
 
 // Cache for product details to prevent multiple API calls
 const productCache = new Map<string, { product: Product; timestamp: number }>();
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
 export const fetchProducts = async (): Promise<ProductsResponse> => {
-  // Try using proxy endpoint first (works in dev mode via Vite proxy)
-  const proxyUrl = '/api/products';
-  const directUrl = `https://${DOMAIN_NAME}/storefront/api/v1/products`;
+  const url = `${WEBHOOK_URL}?function=get-products`;
   
-  // Try proxy first if in dev mode
-  if (import.meta.env.DEV) {
-    try {
-      const proxyResponse = await fetch(proxyUrl, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          'domain-name': DOMAIN_NAME,
-        },
-      });
-
-      if (proxyResponse.ok) {
-        const data: ProductsResponse = await proxyResponse.json();
-        return data;
-      }
-    } catch (proxyError) {
-      console.log('Proxy request failed, trying direct endpoint...', proxyError);
-    }
-  }
-
-  // Fall back to direct domain endpoint
   try {
-    const response = await fetch(directUrl, {
-      method: 'GET',
+    const response = await fetch(url, {
+      method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
-        'domain-name': DOMAIN_NAME,
       },
       mode: 'cors',
     });
@@ -54,7 +30,7 @@ export const fetchProducts = async (): Promise<ProductsResponse> => {
     return data;
   } catch (error) {
     if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
-      throw new Error('CORS error: Unable to fetch products. Please ensure CORS is enabled on the API or use the proxy.');
+      throw new Error('CORS error: Unable to fetch products. Please ensure CORS is enabled on the API.');
     }
     throw error;
   }
@@ -67,86 +43,44 @@ export const fetchProductDetail = async (variantId: string): Promise<Product> =>
     return cached.product;
   }
 
-  const domainUrl = `https://${DOMAIN_NAME}/storefront/api/v1/products/${variantId}`;
-  const proxyUrl = `/api/products/${variantId}`;
+  const url = `${WEBHOOK_URL}?function=get-product-detail`;
   
-  // In dev mode, always use proxy first to avoid CORS
-  if (import.meta.env.DEV) {
-    try {
-      const proxyResponse = await fetch(proxyUrl, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          'domain-name': DOMAIN_NAME,
-        },
-      });
-
-      if (proxyResponse.ok) {
-        const response = await proxyResponse.json();
-        let product: Product;
-        
-        // Handle different response formats
-        if (response.payload && response.payload.product) {
-          product = response.payload.product;
-        } else if (response.product) {
-          product = response.product;
-        } else if (response.product_id) {
-          product = response;
-        } else {
-          throw new Error('Unexpected API response format');
-        }
-
-        // Cache the product
-        productCache.set(variantId, { product, timestamp: Date.now() });
-        return product;
-      } else {
-        const errorText = await proxyResponse.text().catch(() => proxyResponse.statusText);
-        console.error('Proxy response error:', proxyResponse.status, errorText);
-        throw new Error(`API returned ${proxyResponse.status}: ${errorText}`);
-      }
-    } catch (proxyError) {
-      console.error('Proxy request failed:', proxyError);
-      // Fall through to try direct endpoint
-    }
-  }
-
-  // Fallback to direct domain endpoint
   try {
-    const response = await fetch(domainUrl, {
-      method: 'GET',
+    const response = await fetch(url, {
+      method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
-        'domain-name': DOMAIN_NAME,
       },
       mode: 'cors',
+      body: JSON.stringify({ variant_id: variantId }),
     });
 
-    if (response.ok) {
-      const responseData = await response.json();
-      let product: Product;
-      
-      if (responseData.payload && responseData.payload.product) {
-        product = responseData.payload.product;
-      } else if (responseData.product) {
-        product = responseData.product;
-      } else if (responseData.product_id) {
-        product = responseData;
-      } else {
-        throw new Error('Unexpected API response format');
-      }
-
-      // Cache the product
-      productCache.set(variantId, { product, timestamp: Date.now() });
-      return product;
-    } else {
+    if (!response.ok) {
       const errorText = await response.text().catch(() => response.statusText);
       throw new Error(`API returned ${response.status}: ${errorText}`);
     }
+
+    const responseData = await response.json();
+    let product: Product;
+    
+    // Handle different response formats
+    if (responseData.payload && responseData.payload.product) {
+      product = responseData.payload.product;
+    } else if (responseData.product) {
+      product = responseData.product;
+    } else if (responseData.product_id) {
+      product = responseData;
+    } else {
+      throw new Error('Unexpected API response format');
+    }
+
+    // Cache the product
+    productCache.set(variantId, { product, timestamp: Date.now() });
+    return product;
   } catch (error) {
     if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
-      throw new Error('CORS error: Unable to fetch product. Please restart your dev server (npm run dev) to ensure the proxy is active.');
+      throw new Error('CORS error: Unable to fetch product. Please ensure CORS is enabled on the API.');
     }
     throw error;
   }
@@ -198,74 +132,37 @@ export const addToCart = async (
     body.cart_id = existingCartId;
   }
   
-  const domainUrl = `https://${DOMAIN_NAME}/storefront/api/v1/cart`;
-  const proxyUrl = '/api/cart';
+  const url = `${WEBHOOK_URL}?function=add-to-cart`;
   
-  // In dev mode, try proxy first
-  if (import.meta.env.DEV) {
-    try {
-      const proxyResponse = await fetch(proxyUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          'domain-name': DOMAIN_NAME,
-        },
-        body: JSON.stringify(body),
-      });
-
-      if (proxyResponse.ok) {
-        const response = await proxyResponse.json();
-        
-        // Check if response contains cart_id (new or existing)
-        const cartId = response.cart_id || response.payload?.cart_id;
-        if (cartId && cartId !== existingCartId) {
-          // Save new cart_id to cookie
-          setCartId(cartId);
-        }
-        
-        return response;
-      } else {
-        const errorText = await proxyResponse.text().catch(() => proxyResponse.statusText);
-        throw new Error(`Failed to add to cart: ${proxyResponse.status} ${errorText}`);
-      }
-    } catch (proxyError) {
-      console.error('Proxy request failed:', proxyError);
-      // Fall through to try direct endpoint
-    }
-  }
-
-  // Fallback to direct domain endpoint
   try {
-    const response = await fetch(domainUrl, {
+    const response = await fetch(url, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
-        'domain-name': DOMAIN_NAME,
       },
       mode: 'cors',
       body: JSON.stringify(body),
     });
 
-    if (response.ok) {
-      const responseData = await response.json();
-      
-      // Check if response contains cart_id (new or existing)
-      const cartId = responseData.cart_id || responseData.payload?.cart_id;
-      if (cartId && cartId !== existingCartId) {
-        // Save new cart_id to cookie
-        setCartId(cartId);
-      }
-      
-      return responseData;
-    } else {
+    if (!response.ok) {
       const errorText = await response.text().catch(() => response.statusText);
       throw new Error(`Failed to add to cart: ${response.status} ${errorText}`);
     }
+
+    const responseData = await response.json();
+    
+    // Check if response contains cart_id (new or existing)
+    const cartId = responseData.cart_id || responseData.payload?.cart_id;
+    if (cartId && cartId !== existingCartId) {
+      // Save new cart_id to cookie
+      setCartId(cartId);
+    }
+    
+    return responseData;
   } catch (error) {
     if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
-      throw new Error('CORS error: Unable to add to cart. Please restart your dev server (npm run dev) to ensure the proxy is active.');
+      throw new Error('CORS error: Unable to add to cart. Please ensure CORS is enabled on the API.');
     }
     throw error;
   }
@@ -292,56 +189,37 @@ export interface CartItemResponse {
 }
 
 export const getCartItems = async (cartId: string): Promise<CartItemResponse> => {
-  const domainUrl = `https://${DOMAIN_NAME}/storefront/api/v1/cart?cart_id=${cartId}`;
-  const proxyUrl = `/api/cart?cart_id=${cartId}`;
+  const url = `${WEBHOOK_URL}?function=get-cart`;
   
-  // In dev mode, try proxy first
-  if (import.meta.env.DEV) {
-    try {
-      const proxyResponse = await fetch(proxyUrl, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          'domain-name': DOMAIN_NAME,
-        },
-      });
-
-      if (proxyResponse.ok) {
-        const response = await proxyResponse.json();
-        return response;
-      } else {
-        const errorText = await proxyResponse.text().catch(() => proxyResponse.statusText);
-        throw new Error(`Failed to get cart items: ${proxyResponse.status} ${errorText}`);
-      }
-    } catch (proxyError) {
-      console.error('Proxy request failed:', proxyError);
-      // Fall through to try direct endpoint
-    }
-  }
-
-  // Fallback to direct domain endpoint
   try {
-    const response = await fetch(domainUrl, {
-      method: 'GET',
+    const response = await fetch(url, {
+      method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
-        'domain-name': DOMAIN_NAME,
       },
       mode: 'cors',
+      body: JSON.stringify({ cart_id: cartId }),
     });
 
-    if (response.ok) {
-      const responseData = await response.json();
-      return responseData;
-    } else {
+    if (!response.ok) {
       const errorText = await response.text().catch(() => response.statusText);
       throw new Error(`Failed to get cart items: ${response.status} ${errorText}`);
     }
+
+    const responseData = await response.json();
+    
+    // Check if cart is empty and delete cart_id cookie if so
+    const lineItems = responseData.payload?.line_items || [];
+    const items = responseData.payload?.items || [];
+    if (lineItems.length === 0 && items.length === 0) {
+      deleteCartId();
+    }
+    
+    return responseData;
   } catch (error) {
     if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
-      throw new Error('CORS error: Unable to get cart items. Please restart your dev server (npm run dev) to ensure the proxy is active.');
+      throw new Error('CORS error: Unable to get cart items. Please ensure CORS is enabled on the API.');
     }
     throw error;
   }
@@ -480,56 +358,29 @@ export interface CheckoutResponse {
 }
 
 export const getCheckoutData = async (cartId: string): Promise<CheckoutResponse> => {
-  const domainUrl = `https://${DOMAIN_NAME}/storefront/api/v1/checkout?checkout_id=${cartId}`;
-  const proxyUrl = `/api/checkout?checkout_id=${cartId}`;
+  const url = `${WEBHOOK_URL}?function=get-checkout-info`;
   
-  // In dev mode, try proxy first
-  if (import.meta.env.DEV) {
-    try {
-      const proxyResponse = await fetch(proxyUrl, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          'domain-name': DOMAIN_NAME,
-        },
-      });
-
-      if (proxyResponse.ok) {
-        const response = await proxyResponse.json();
-        return response;
-      } else {
-        const errorText = await proxyResponse.text().catch(() => proxyResponse.statusText);
-        throw new Error(`Failed to get checkout data: ${proxyResponse.status} ${errorText}`);
-      }
-    } catch (proxyError) {
-      console.error('Proxy request failed:', proxyError);
-      // Fall through to try direct endpoint
-    }
-  }
-
-  // Fallback to direct domain endpoint
   try {
-    const response = await fetch(domainUrl, {
-      method: 'GET',
+    const response = await fetch(url, {
+      method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
-        'domain-name': DOMAIN_NAME,
       },
       mode: 'cors',
+      body: JSON.stringify({ checkout_id: cartId }),
     });
 
-    if (response.ok) {
-      const responseData = await response.json();
-      return responseData;
-    } else {
+    if (!response.ok) {
       const errorText = await response.text().catch(() => response.statusText);
       throw new Error(`Failed to get checkout data: ${response.status} ${errorText}`);
     }
+
+    const responseData = await response.json();
+    return responseData;
   } catch (error) {
     if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
-      throw new Error('CORS error: Unable to get checkout data. Please restart your dev server (npm run dev) to ensure the proxy is active.');
+      throw new Error('CORS error: Unable to get checkout data. Please ensure CORS is enabled on the API.');
     }
     throw error;
   }
@@ -539,58 +390,32 @@ export const submitCheckoutAddress = async (
   cartId: string,
   addressData: CheckoutAddressRequest
 ): Promise<CheckoutAddressResponse> => {
-  const domainUrl = `https://${DOMAIN_NAME}/storefront/api/v1/checkout/address?checkout_id=${cartId}`;
-  const proxyUrl = `/api/checkout/address?checkout_id=${cartId}`;
+  const url = `${WEBHOOK_URL}?function=add-address`;
   
-  // In dev mode, try proxy first
-  if (import.meta.env.DEV) {
-    try {
-      const proxyResponse = await fetch(proxyUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          'domain-name': DOMAIN_NAME,
-        },
-        body: JSON.stringify(addressData),
-      });
-
-      if (proxyResponse.ok) {
-        const response = await proxyResponse.json();
-        return response;
-      } else {
-        const errorText = await proxyResponse.text().catch(() => proxyResponse.statusText);
-        throw new Error(`Failed to submit checkout address: ${proxyResponse.status} ${errorText}`);
-      }
-    } catch (proxyError) {
-      console.error('Proxy request failed:', proxyError);
-      // Fall through to try direct endpoint
-    }
-  }
-
-  // Fallback to direct domain endpoint
   try {
-    const response = await fetch(domainUrl, {
+    const response = await fetch(url, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
-        'domain-name': DOMAIN_NAME,
       },
       mode: 'cors',
-      body: JSON.stringify(addressData),
+      body: JSON.stringify({
+        checkout_id: cartId,
+        ...addressData,
+      }),
     });
 
-    if (response.ok) {
-      const responseData = await response.json();
-      return responseData;
-    } else {
+    if (!response.ok) {
       const errorText = await response.text().catch(() => response.statusText);
       throw new Error(`Failed to submit checkout address: ${response.status} ${errorText}`);
     }
+
+    const responseData = await response.json();
+    return responseData;
   } catch (error) {
     if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
-      throw new Error('CORS error: Unable to submit checkout address. Please restart your dev server (npm run dev) to ensure the proxy is active.');
+      throw new Error('CORS error: Unable to submit checkout address. Please ensure CORS is enabled on the API.');
     }
     throw error;
   }
@@ -600,62 +425,32 @@ export const submitShippingMethod = async (
   cartId: string,
   shippingMethodId: string
 ): Promise<CheckoutShippingMethodResponse> => {
-  const domainUrl = `https://${DOMAIN_NAME}/storefront/api/v1/checkout/shipping-methods?checkout_id=${cartId}`;
-  const proxyUrl = `/api/checkout/shipping-methods?checkout_id=${cartId}`;
+  const url = `${WEBHOOK_URL}?function=add-shipping-methods`;
   
-  const body: CheckoutShippingMethodRequest = {
-    shipping: shippingMethodId,
-  };
-  
-  // In dev mode, try proxy first
-  if (import.meta.env.DEV) {
-    try {
-      const proxyResponse = await fetch(proxyUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          'domain-name': DOMAIN_NAME,
-        },
-        body: JSON.stringify(body),
-      });
-
-      if (proxyResponse.ok) {
-        const response = await proxyResponse.json();
-        return response;
-      } else {
-        const errorText = await proxyResponse.text().catch(() => proxyResponse.statusText);
-        throw new Error(`Failed to submit shipping method: ${proxyResponse.status} ${errorText}`);
-      }
-    } catch (proxyError) {
-      console.error('Proxy request failed:', proxyError);
-      // Fall through to try direct endpoint
-    }
-  }
-
-  // Fallback to direct domain endpoint
   try {
-    const response = await fetch(domainUrl, {
+    const response = await fetch(url, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
-        'domain-name': DOMAIN_NAME,
       },
       mode: 'cors',
-      body: JSON.stringify(body),
+      body: JSON.stringify({
+        checkout_id: cartId,
+        shipping: shippingMethodId,
+      }),
     });
 
-    if (response.ok) {
-      const responseData = await response.json();
-      return responseData;
-    } else {
+    if (!response.ok) {
       const errorText = await response.text().catch(() => response.statusText);
       throw new Error(`Failed to submit shipping method: ${response.status} ${errorText}`);
     }
+
+    const responseData = await response.json();
+    return responseData;
   } catch (error) {
     if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
-      throw new Error('CORS error: Unable to submit shipping method. Please restart your dev server (npm run dev) to ensure the proxy is active.');
+      throw new Error('CORS error: Unable to submit shipping method. Please ensure CORS is enabled on the API.');
     }
     throw error;
   }
@@ -671,56 +466,32 @@ export const processOfflinePayment = async (
   cartId: string,
   paymentMode: string = 'cash_on_delivery'
 ): Promise<ProcessOfflinePaymentResponse> => {
-  const domainUrl = `https://${DOMAIN_NAME}/storefront/api/v1/checkout/process-offline-payment?checkout_id=${cartId}&payment_mode=${paymentMode}`;
-  const proxyUrl = `/api/checkout/process-offline-payment?checkout_id=${cartId}&payment_mode=${paymentMode}`;
+  const url = `${WEBHOOK_URL}?function=place-order`;
   
-  // In dev mode, try proxy first
-  if (import.meta.env.DEV) {
-    try {
-      const proxyResponse = await fetch(proxyUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          'domain-name': DOMAIN_NAME,
-        },
-      });
-
-      if (proxyResponse.ok) {
-        const response = await proxyResponse.json();
-        return response;
-      } else {
-        const errorText = await proxyResponse.text().catch(() => proxyResponse.statusText);
-        throw new Error(`Failed to process payment: ${proxyResponse.status} ${errorText}`);
-      }
-    } catch (proxyError) {
-      console.error('Proxy request failed:', proxyError);
-      // Fall through to try direct endpoint
-    }
-  }
-
-  // Fallback to direct domain endpoint
   try {
-    const response = await fetch(domainUrl, {
+    const response = await fetch(url, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
-        'domain-name': DOMAIN_NAME,
       },
       mode: 'cors',
+      body: JSON.stringify({
+        checkout_id: cartId,
+        payment_mode: paymentMode,
+      }),
     });
 
-    if (response.ok) {
-      const responseData = await response.json();
-      return responseData;
-    } else {
+    if (!response.ok) {
       const errorText = await response.text().catch(() => response.statusText);
       throw new Error(`Failed to process payment: ${response.status} ${errorText}`);
     }
+
+    const responseData = await response.json();
+    return responseData;
   } catch (error) {
     if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
-      throw new Error('CORS error: Unable to process payment. Please restart your dev server (npm run dev) to ensure the proxy is active.');
+      throw new Error('CORS error: Unable to process payment. Please ensure CORS is enabled on the API.');
     }
     throw error;
   }

@@ -3,22 +3,29 @@
   margin: 0 auto;
   padding: 2rem;
   min-height: 100vh;
+  background-color: #f8fafc;
 }
 
 .header {
   text-align: center;
   margin-bottom: 3rem;
   position: relative;
+  padding: 2rem 0;
+  background: linear-gradient(135deg, #0066cc 0%, #1e88e5 100%);
+  border-radius: 12px;
+  color: white;
+  box-shadow: 0 4px 12px rgba(0, 102, 204, 0.15);
 }
 
 .cart-icon-btn {
   position: absolute;
-  top: 0;
-  right: 0;
+  top: 1.5rem;
+  right: 1.5rem;
   width: 50px;
   height: 50px;
   border: none;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(10px);
   color: white;
   font-size: 1.5rem;
   border-radius: 50%;
@@ -26,13 +33,14 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .cart-icon-btn:hover {
-  transform: scale(1.1);
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+  background: rgba(255, 255, 255, 0.3);
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 .cart-badge {
@@ -48,21 +56,22 @@
   min-width: 20px;
   text-align: center;
   line-height: 1.2;
+  box-shadow: 0 2px 4px rgba(239, 68, 68, 0.3);
 }
 
 .header h1 {
   font-size: 3rem;
   margin-bottom: 0.5rem;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: white;
+  font-weight: 600;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .subtitle {
   font-size: 1.2rem;
-  color: #666;
+  color: rgba(255, 255, 255, 0.9);
   margin: 0;
+  font-weight: 400;
 }
 
 .loading,
@@ -88,15 +97,17 @@
   background: white;
   border-radius: 12px;
   overflow: hidden;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s ease;
   display: flex;
   flex-direction: column;
+  border: 1px solid #e2e8f0;
 }
 
 .product-card:hover {
   transform: translateY(-5px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 8px 24px rgba(0, 102, 204, 0.12);
+  border-color: #0066cc;
 }
 
 .product-image-container {
@@ -135,13 +146,15 @@
 }
 
 .sale-badge {
-  background: #e74c3c;
+  background: #ef4444;
   color: white;
+  box-shadow: 0 2px 4px rgba(239, 68, 68, 0.3);
 }
 
 .out-of-stock-badge {
-  background: #95a5a6;
+  background: #64748b;
   color: white;
+  box-shadow: 0 2px 4px rgba(100, 116, 139, 0.3);
 }
 
 .product-info {
@@ -187,13 +200,13 @@
 .current-price {
   font-size: 1.3rem;
   font-weight: 700;
-  color: #667eea;
+  color: #0066cc;
 }
 
 .view-product-btn {
   display: inline-block;
   padding: 0.75rem 1.5rem;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: #0066cc;
   color: white;
   text-decoration: none;
   border: none;
@@ -203,14 +216,16 @@
   font-size: 1rem;
   font-family: inherit;
   cursor: pointer;
-  transition: opacity 0.3s ease, transform 0.2s ease;
+  transition: all 0.3s ease;
   margin-top: auto;
   width: 100%;
+  box-shadow: 0 2px 4px rgba(0, 102, 204, 0.2);
 }
 
 .view-product-btn:hover {
-  opacity: 0.9;
+  background: #0052a3;
   transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 102, 204, 0.3);
 }
 
 @media (max-width: 768px) {
@@ -232,21 +247,4 @@
   }
 }
 
-@media (prefers-color-scheme: dark) {
-  .product-card {
-    background: #1a1a1a;
-    border: 1px solid #333;
-  }
-
-  .product-name {
-    color: #fff;
-  }
-
-  .product-description {
-    color: #aaa;
-  }
-
-  .product-image-container {
-    background: #2a2a2a;
-  }
-}
+/* Medical theme - keeping light mode for clean, clinical appearance */

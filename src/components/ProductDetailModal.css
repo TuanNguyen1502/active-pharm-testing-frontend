@@ -153,7 +153,8 @@
 }
 
 .thumbnail.active {
-  border-color: #667eea;
+  border-color: #0066cc;
+  box-shadow: 0 0 0 2px rgba(0, 102, 204, 0.2);
 }
 
 .thumbnail img {
@@ -201,7 +202,7 @@
 .product-detail-current-price {
   font-size: 2rem;
   font-weight: 700;
-  color: #667eea;
+  color: #0066cc;
 }
 
 .product-detail-description {
@@ -365,7 +366,8 @@
 
 .quantity-input:focus {
   outline: none;
-  border-color: #667eea;
+  border-color: #0066cc;
+  box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.1);
 }
 
 .cart-message {
@@ -427,17 +429,20 @@
 .close-btn {
   margin-top: 1rem;
   padding: 0.75rem 1.5rem;
-  background: #667eea;
+  background: #0066cc;
   color: white;
   border: none;
   border-radius: 8px;
   font-weight: 600;
   cursor: pointer;
-  transition: opacity 0.3s ease;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(0, 102, 204, 0.2);
 }
 
 .close-btn:hover {
-  opacity: 0.9;
+  background: #0052a3;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 102, 204, 0.3);
 }
 
 @media (max-width: 968px) {
@@ -464,32 +469,5 @@
   }
 }
 
-@media (prefers-color-scheme: dark) {
-  .modal-content {
-    background: #1a1a1a;
-  }
-
-  .product-detail-name {
-    color: #fff;
-  }
-
-  .product-detail-short-desc,
-  .description-content,
-  .product-detail-meta {
-    color: #aaa;
-  }
-
-  .product-detail-meta strong {
-    color: #fff;
-  }
-
-  .tag {
-    background: #2a2a2a;
-    color: #aaa;
-  }
-
-  .main-image-container {
-    background: #2a2a2a;
-  }
-}
+/* Medical theme - keeping light mode for clean, clinical appearance */
 

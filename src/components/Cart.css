@@ -22,6 +22,7 @@
   flex-direction: column;
   animation: slideInRight 0.3s ease;
   overflow: hidden;
+  border-left: 3px solid #0066cc;
 }
 
 @keyframes slideInRight {
@@ -38,21 +39,24 @@
   justify-content: space-between;
   align-items: center;
   padding: 1.5rem;
-  border-bottom: 1px solid #e0e0e0;
+  border-bottom: 2px solid #e2e8f0;
+  background: linear-gradient(135deg, #0066cc 0%, #1e88e5 100%);
+  color: white;
 }
 
 .cart-header h2 {
   margin: 0;
   font-size: 1.5rem;
-  color: #333;
+  color: white;
+  font-weight: 600;
 }
 
 .cart-close-btn {
   width: 36px;
   height: 36px;
   border: none;
-  background: #f5f5f5;
-  color: #333;
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
   font-size: 1.5rem;
   line-height: 1;
   border-radius: 50%;
@@ -64,7 +68,7 @@
 }
 
 .cart-close-btn:hover {
-  background: #e0e0e0;
+  background: rgba(255, 255, 255, 0.3);
 }
 
 .cart-content {
@@ -100,18 +104,21 @@
 
 .retry-btn {
   padding: 0.75rem 1.5rem;
-  background: #667eea;
+  background: #0066cc;
   color: white;
   border: none;
   border-radius: 8px;
   font-weight: 600;
   cursor: pointer;
-  transition: opacity 0.3s ease;
+  transition: all 0.3s ease;
   font-family: inherit;
+  box-shadow: 0 2px 4px rgba(0, 102, 204, 0.2);
 }
 
 .retry-btn:hover {
-  opacity: 0.9;
+  background: #0052a3;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 102, 204, 0.3);
 }
 
 .cart-items {
@@ -157,7 +164,7 @@
 .cart-item-price {
   font-size: 1rem;
   font-weight: 600;
-  color: #667eea;
+  color: #0066cc;
 }
 
 .cart-item-quantity {
@@ -230,15 +237,17 @@
   font-weight: 600;
   font-size: 1rem;
   cursor: pointer;
-  transition: opacity 0.3s ease, transform 0.2s ease;
+  transition: all 0.3s ease;
   font-family: inherit;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: #0066cc;
   color: white;
+  box-shadow: 0 2px 4px rgba(0, 102, 204, 0.2);
 }
 
 .checkout-btn:hover {
-  opacity: 0.9;
+  background: #0052a3;
   transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 102, 204, 0.3);
 }
 
 @media (max-width: 768px) {
@@ -247,39 +256,5 @@
   }
 }
 
-@media (prefers-color-scheme: dark) {
-  .cart-sidebar {
-    background: #1a1a1a;
-  }
-
-  .cart-header h2 {
-    color: #fff;
-  }
-
-  .cart-item {
-    background: #2a2a2a;
-    border-color: #444;
-  }
-
-  .cart-item-name {
-    color: #fff;
-  }
-
-  .cart-summary-row {
-    color: #aaa;
-  }
-
-  .cart-summary-row.cart-total {
-    color: #fff;
-  }
-
-  .cart-close-btn {
-    background: #2a2a2a;
-    color: #fff;
-  }
-
-  .cart-close-btn:hover {
-    background: #333;
-  }
-}
+/* Medical theme - keeping light mode for clean, clinical appearance */
 

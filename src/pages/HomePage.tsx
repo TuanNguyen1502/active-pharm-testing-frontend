@@ -93,7 +93,7 @@ function HomePage() {
     <div className="app-container">
       <header className="header">
         <h1>ActivePharm</h1>
-        <p className="subtitle">Discover our amazing products</p>
+        <p className="subtitle">Your Trusted Pharmacy Partner</p>
         <button 
           className="cart-icon-btn"
           onClick={() => setIsCartOpen(true)}
