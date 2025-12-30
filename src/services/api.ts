@@ -3,6 +3,7 @@ import { getCartId, setCartId, deleteCartId } from '../utils/cookies';
 
 const DOMAIN_NAME = import.meta.env.VITE_DOMAIN_NAME 
 const WEBHOOK_URL = import.meta.env.VITE_WEBHOOK_URL 
+const WEBHOOK_AUTH_KEY = import.meta.env.VITE_WEBHOOK_AUTH_KEY 
 
 // Cache for product details to prevent multiple API calls
 const productCache = new Map<string, { product: Product; timestamp: number }>();
@@ -17,6 +18,7 @@ export const fetchProducts = async (): Promise<ProductsResponse> => {
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
+        ...(WEBHOOK_AUTH_KEY && { 'key': WEBHOOK_AUTH_KEY }),
       },
       mode: 'cors',
     });
