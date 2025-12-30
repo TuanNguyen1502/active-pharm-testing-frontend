@@ -9,6 +9,9 @@ const WEBHOOK_URL = '/webhook'
 const productCache = new Map<string, { product: Product; timestamp: number }>();
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
+// Cache for all products from fetchProducts to avoid calling get-product-detail
+let productsListCache: { products: Product[]; timestamp: number } | null = null;
+
 export const fetchProducts = async (): Promise<ProductsResponse> => {
   const url = `${WEBHOOK_URL}?function=get-products`;
   
@@ -28,6 +31,30 @@ export const fetchProducts = async (): Promise<ProductsResponse> => {
     }
 
     const data: ProductsResponse = await response.json();
+    
+    // Cache all products and their variants to avoid calling get-product-detail
+    if (data.payload && data.payload.products) {
+      const products = data.payload.products;
+      productsListCache = {
+        products,
+        timestamp: Date.now()
+      };
+      
+      // Cache each product by product_id
+      products.forEach(product => {
+        productCache.set(product.product_id, { product, timestamp: Date.now() });
+        
+        // Cache each variant by variant_id
+        if (product.variants && product.variants.length > 0) {
+          product.variants.forEach(variant => {
+            if (variant.variant_id) {
+              productCache.set(variant.variant_id, { product, timestamp: Date.now() });
+            }
+          });
+        }
+      });
+    }
+    
     return data;
   } catch (error) {
     if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
@@ -38,12 +65,36 @@ export const fetchProducts = async (): Promise<ProductsResponse> => {
 };
 
 export const fetchProductDetail = async (variantId: string): Promise<Product> => {
-  // Check cache first
+  // Check cache first - prioritize cache from fetchProducts
   const cached = productCache.get(variantId);
   if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
     return cached.product;
   }
 
+  // If not found in cache, try to find in productsListCache
+  if (productsListCache && Date.now() - productsListCache.timestamp < CACHE_DURATION) {
+    // Search through all products and their variants
+    for (const product of productsListCache.products) {
+      // Check if variantId matches product_id
+      if (product.product_id === variantId) {
+        productCache.set(variantId, { product, timestamp: Date.now() });
+        return product;
+      }
+      
+      // Check if variantId matches any variant's variant_id
+      if (product.variants && product.variants.length > 0) {
+        for (const variant of product.variants) {
+          if (variant.variant_id === variantId) {
+            // Cache it for future lookups
+            productCache.set(variantId, { product, timestamp: Date.now() });
+            return product;
+          }
+        }
+      }
+    }
+  }
+
+  // If still not found, fallback to API call (shouldn't happen if fetchProducts was called first)
   const url = `${WEBHOOK_URL}?function=get-product-detail`;
   
   try {
@@ -78,6 +129,19 @@ export const fetchProductDetail = async (variantId: string): Promise<Product> =>
 
     // Cache the product
     productCache.set(variantId, { product, timestamp: Date.now() });
+    
+    // Also cache by product_id and all variant_ids
+    if (product.product_id) {
+      productCache.set(product.product_id, { product, timestamp: Date.now() });
+    }
+    if (product.variants && product.variants.length > 0) {
+      product.variants.forEach(variant => {
+        if (variant.variant_id) {
+          productCache.set(variant.variant_id, { product, timestamp: Date.now() });
+        }
+      });
+    }
+    
     return product;
   } catch (error) {
     if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
