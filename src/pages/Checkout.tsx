@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { getCartId, deleteCartId } from '../utils/cookies'
-import { submitCheckoutAddress, submitShippingMethod, processOfflinePayment, type Country, type ShippingMethod } from '../services/api'
+import { submitCheckoutAddress, confirmCheckout, type Country, type ShippingMethod } from '../services/api'
 import countriesData from '../data/countries.json'
 import './Checkout.css'
 
@@ -203,17 +203,12 @@ function Checkout() {
       setLoading(true)
       setError(null)
 
-      // Submit shipping method if not already submitted and shipping methods are available
-      if (selectedShippingMethod && shippingMethods.length > 0) {
-        const shippingResponse = await submitShippingMethod(cartId, selectedShippingMethod)
-        
-        if (shippingResponse.status_code !== '0' && shippingResponse.status_message !== 'success') {
-          throw new Error(shippingResponse.status_message || 'Failed to submit shipping method')
-        }
-      }
-
-      // Place order
-      const response = await processOfflinePayment(cartId, 'cash_on_delivery')
+      // Confirm checkout with shipping method and payment mode in one call
+      const response = await confirmCheckout(
+        cartId,
+        selectedShippingMethod || undefined,
+        'cash_on_delivery'
+      )
       
       // Handle successful order placement
       if (response.status_code === '0' || response.status_message === 'success') {

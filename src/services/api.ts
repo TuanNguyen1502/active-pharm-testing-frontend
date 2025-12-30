@@ -562,3 +562,58 @@ export const processOfflinePayment = async (
   }
 };
 
+export interface ConfirmCheckoutRequest {
+  checkout_id: string;
+  shipping?: string;
+  payment_mode?: string;
+}
+
+export interface ConfirmCheckoutResponse {
+  status_message?: string;
+  status_code?: string;
+  [key: string]: unknown;
+}
+
+export const confirmCheckout = async (
+  cartId: string,
+  shippingMethodId?: string,
+  paymentMode: string = 'cash_on_delivery'
+): Promise<ConfirmCheckoutResponse> => {
+  const url = `${WEBHOOK_URL}?function=confirm-checkout`;
+  
+  try {
+    const body: ConfirmCheckoutRequest = {
+      checkout_id: cartId,
+      payment_mode: paymentMode,
+    };
+
+    // Only include shipping if provided
+    if (shippingMethodId) {
+      body.shipping = shippingMethodId;
+    }
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+      mode: 'cors',
+      body: JSON.stringify(body),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text().catch(() => response.statusText);
+      throw new Error(`Failed to confirm checkout: ${response.status} ${errorText}`);
+    }
+
+    const responseData = await response.json();
+    return responseData;
+  } catch (error) {
+    if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
+      throw new Error('CORS error: Unable to confirm checkout. Please ensure CORS is enabled on the API.');
+    }
+    throw error;
+  }
+};
+
