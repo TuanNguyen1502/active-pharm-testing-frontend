@@ -4,13 +4,21 @@ export default async function handler(
   req: VercelRequest,
   res: VercelResponse
 ) {
+  // Handle CORS preflight
+  if (req.method === 'OPTIONS') {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Accept');
+    return res.status(200).end();
+  }
+
   // Construct the webhook URL with query parameters
   const webhookBaseUrl = 'https://n8n.impactwebstudio.ca/webhook/active-pharma';
   
   // Get query parameters from request
   const queryParams = new URLSearchParams();
   Object.entries(req.query).forEach(([key, value]) => {
-    if (key !== 'path' && value) {
+    if (value) {
       queryParams.append(key, Array.isArray(value) ? value[0] : value);
     }
   });
@@ -50,10 +58,19 @@ export default async function handler(
       jsonData = data;
     }
 
+    // Set CORS headers
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Accept');
+
     // Forward the response
     res.status(response.status).json(jsonData);
   } catch (error) {
     console.error('Webhook proxy error:', error);
+    
+    // Set CORS headers even on error
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    
     res.status(500).json({ 
       error: 'Failed to proxy webhook request',
       message: error instanceof Error ? error.message : 'Unknown error'
