@@ -23,6 +23,20 @@ export default defineConfig(({ mode }) => {
             });
           },
         },
+        '/webhook': {
+          target: 'https://n8n.impactwebstudio.ca',
+          changeOrigin: true,
+          secure: true,
+          rewrite: (path) => path.replace(/^\/webhook/, '/webhook/active-pharma'),
+          configure: (proxy, _options) => {
+            proxy.on('proxyReq', (proxyReq, _req, _res) => {
+              const authKey = env.VITE_WEBHOOK_AUTH_KEY;
+              if (authKey) {
+                proxyReq.setHeader('key', authKey);
+              }
+            });
+          },
+        },
       },
     },
   }
