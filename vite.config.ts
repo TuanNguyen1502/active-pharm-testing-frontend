@@ -31,7 +31,10 @@ export default defineConfig(({ mode }) => {
           configure: (proxy, _options) => {
             proxy.on('proxyReq', (proxyReq, _req, _res) => {
               const authKey = env.VITE_WEBHOOK_AUTH_KEY;
-              if (authKey) {
+              if (!authKey) {
+                console.error('VITE_WEBHOOK_AUTH_KEY is not set in .env file');
+              } else {
+                // Always add auth key header
                 proxyReq.setHeader('key', authKey);
               }
             });

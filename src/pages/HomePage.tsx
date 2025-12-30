@@ -1,56 +1,65 @@
 import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import '../App.css'
-import { fetchProducts, getProductImageUrl, getCartItems as fetchCartItemsFromAPI } from '../services/api'
-import type { Product } from '../types/product'
+import { fetchProducts, getProductImageUrl } from '../services/api'
+import type { Product, ProductsResponse } from '../types/product'
 import ProductDetailModal from '../components/ProductDetailModal'
-import Cart from '../components/Cart'
-import { getCartId } from '../utils/cookies'
+
+// Shared promise to prevent duplicate calls in StrictMode
+let productsPromise: Promise<ProductsResponse> | null = null
 
 function HomePage() {
+  const navigate = useNavigate()
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [currency, setCurrency] = useState<string>('USD')
   const [selectedVariantId, setSelectedVariantId] = useState<string | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
-  const [isCartOpen, setIsCartOpen] = useState(false)
-  const [cartItemCount, setCartItemCount] = useState(0)
 
   useEffect(() => {
+    let isMounted = true
+
     const loadProducts = async () => {
       try {
         setLoading(true)
-        const response = await fetchProducts()
-        setProducts(response.payload.products)
-        setCurrency(response.payload.currency.code)
+        
+        // Reuse existing promise if available (prevents duplicate calls)
+        if (!productsPromise) {
+          productsPromise = fetchProducts()
+        }
+        
+        const response = await productsPromise
+        
+        // Only update state if component is still mounted
+        if (isMounted) {
+          setProducts(response.payload.products)
+          setCurrency(response.payload.currency.code)
+        }
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to load products')
+        if (isMounted) {
+          setError(err instanceof Error ? err.message : 'Failed to load products')
+        }
+        // Reset promise on error so it can be retried
+        productsPromise = null
       } finally {
-        setLoading(false)
+        if (isMounted) {
+          setLoading(false)
+        }
+        // Reset promise after a short delay to allow for StrictMode remount
+        setTimeout(() => {
+          productsPromise = null
+        }, 100)
       }
     }
 
     loadProducts()
-    updateCartCount()
+
+    // Cleanup function
+    return () => {
+      isMounted = false
+    }
   }, [])
-
-  const updateCartCount = async () => {
-    const cartId = getCartId()
-    if (!cartId) {
-      setCartItemCount(0)
-      return
-    }
-
-    try {
-      const response = await fetchCartItemsFromAPI(cartId)
-      const items = response.payload?.items || []
-      const count = items.reduce((sum: number, item: any) => sum + (item.quantity || 0), 0)
-      setCartItemCount(count)
-    } catch (err) {
-      console.error('Failed to update cart count:', err)
-      setCartItemCount(0)
-    }
-  }
 
   const formatPrice = (price: number): string => {
     return new Intl.NumberFormat('vi-VN').format(price)
@@ -66,11 +75,6 @@ function HomePage() {
 
   const handleCloseModal = () => {
     setIsModalOpen(false)
-    updateCartCount()
-  }
-
-  const handleCartUpdate = () => {
-    updateCartCount()
   }
 
   if (loading) {
@@ -96,13 +100,10 @@ function HomePage() {
         <p className="subtitle">Your Trusted Pharmacy Partner</p>
         <button 
           className="cart-icon-btn"
-          onClick={() => setIsCartOpen(true)}
+          onClick={() => navigate('/cart')}
           aria-label="Open cart"
         >
           🛒
-          {cartItemCount > 0 && (
-            <span className="cart-badge">{cartItemCount}</span>
-          )}
         </button>
       </header>
 
@@ -164,12 +165,6 @@ function HomePage() {
         variantId={selectedVariantId}
         isOpen={isModalOpen}
         onClose={handleCloseModal}
-      />
-      
-      <Cart
-        isOpen={isCartOpen}
-        onClose={() => setIsCartOpen(false)}
-        onUpdate={handleCartUpdate}
       />
     </div>
   )

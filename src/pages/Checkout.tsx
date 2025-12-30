@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { getCartId, deleteCartId } from '../utils/cookies'
-import { submitCheckoutAddress, getCheckoutData, submitShippingMethod, processOfflinePayment, type Country, type AddressDetail, type ShippingMethod, type Address } from '../services/api'
+import { submitCheckoutAddress, submitShippingMethod, processOfflinePayment, type Country, type ShippingMethod } from '../services/api'
+import countriesData from '../data/countries.json'
 import './Checkout.css'
 
 function Checkout() {
   const navigate = useNavigate()
-  const [currentStep, setCurrentStep] = useState<1 | 2 | 3>(1) // 1 = address, 2 = shipping method, 3 = confirmation
   const [sameBillingAddress, setSameBillingAddress] = useState(true)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -14,13 +14,7 @@ function Checkout() {
   const [loadingAddressDetails, setLoadingAddressDetails] = useState(true)
   const [shippingMethods, setShippingMethods] = useState<ShippingMethod[]>([])
   const [selectedShippingMethod, setSelectedShippingMethod] = useState<string>('')
-  const [confirmationData, setConfirmationData] = useState<{
-    shippingAddress?: Address;
-    billingAddress?: Address;
-    shipping?: ShippingMethod;
-    total?: number;
-  }>({})
-  const [loadingConfirmation, setLoadingConfirmation] = useState(false)
+  const [addressSubmitted, setAddressSubmitted] = useState(false)
 
   const [shippingAddress, setShippingAddress] = useState({
     first_name: '',
@@ -48,81 +42,36 @@ function Checkout() {
     same_billing_address: true,
   })
 
-  // Fetch address details on component mount
+  // Load countries from local JSON file
   useEffect(() => {
-    const fetchAddressDetails = async () => {
-      const cartId = getCartId()
-      if (!cartId) {
-        setLoadingAddressDetails(false)
-        return
+    try {
+      const countriesArray: Country[] = countriesData.countries || []
+      
+      if (countriesArray.length > 0) {
+        setCountries(countriesArray)
+        // Set default country to first country if available
+        const defaultCountry = countriesArray[0].code
+        setShippingAddress(prev => {
+          if (!prev.country) {
+            return { ...prev, country: defaultCountry }
+          }
+          return prev
+        })
+        setBillingAddress(prev => {
+          if (!prev.country) {
+            return { ...prev, country: defaultCountry }
+          }
+          return prev
+        })
+      } else {
+        setError('No countries available in data file.')
       }
-
-      try {
-        const checkoutData = await getCheckoutData(cartId)
-        console.log('Full checkout data received:', checkoutData)
-        
-        // Access payload.checkout.address_detail.countries
-        const responseData = checkoutData as { payload?: { checkout?: { address_detail?: AddressDetail } }; address_detail?: AddressDetail }
-        let countriesArray: Country[] | undefined
-        
-        // Path: payload.checkout.address_detail.countries
-        if (responseData.payload?.checkout?.address_detail?.countries) {
-          countriesArray = responseData.payload.checkout.address_detail.countries
-          console.log('Found countries at: payload.checkout.address_detail.countries')
-        }
-        // Fallback: direct address_detail.countries
-        else if (responseData.address_detail?.countries) {
-          countriesArray = responseData.address_detail.countries
-          console.log('Found countries at: address_detail.countries')
-        }
-        // Fallback: payload.address_detail.countries
-        else if ((responseData.payload as { address_detail?: AddressDetail })?.address_detail?.countries) {
-          countriesArray = (responseData.payload as { address_detail: AddressDetail }).address_detail.countries
-          console.log('Found countries at: payload.address_detail.countries')
-        }
-        
-        console.log('Countries array:', countriesArray)
-        console.log('Countries array length:', countriesArray?.length)
-        console.log('First country sample:', countriesArray?.[0])
-        
-        // Use countries array
-        if (countriesArray && Array.isArray(countriesArray) && countriesArray.length > 0) {
-          console.log('Setting countries:', countriesArray.length)
-          setCountries(countriesArray)
-          // Set default country to first country if available
-          const defaultCountry = countriesArray[0].code
-          setShippingAddress(prev => {
-            if (!prev.country) {
-              console.log('Setting default shipping country:', defaultCountry)
-              return { ...prev, country: defaultCountry }
-            }
-            return prev
-          })
-          setBillingAddress(prev => {
-            if (!prev.country) {
-              console.log('Setting default billing country:', defaultCountry)
-              return { ...prev, country: defaultCountry }
-            }
-            return prev
-          })
-        } else {
-          console.error('No countries found!')
-          console.error('checkoutData:', checkoutData)
-          console.error('payload:', responseData.payload)
-          console.error('payload.checkout:', responseData.payload?.checkout)
-          console.error('payload.checkout.address_detail:', responseData.payload?.checkout?.address_detail)
-          console.error('countriesArray:', countriesArray)
-          setError('No countries available. Please check the API response.')
-        }
-      } catch (err) {
-        console.error('Failed to fetch address details:', err)
-        setError('Failed to load address details. Please refresh the page.')
-      } finally {
-        setLoadingAddressDetails(false)
-      }
+    } catch (err) {
+      console.error('Failed to load countries:', err)
+      setError('Failed to load countries data. Please refresh the page.')
+    } finally {
+      setLoadingAddressDetails(false)
     }
-
-    fetchAddressDetails()
   }, [])
 
   // Get states for a given country
@@ -185,7 +134,7 @@ function Checkout() {
     }
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleAddressSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
     const cartId = getCartId()
@@ -222,11 +171,10 @@ function Checkout() {
           if (defaultMethod) {
             setSelectedShippingMethod(defaultMethod.id)
           }
-          // Move to shipping method selection step
-          setCurrentStep(2)
+          setAddressSubmitted(true)
         } else {
-          alert('Address submitted successfully!')
-          // TODO: Navigate to payment or order confirmation page if no shipping methods
+          // No shipping methods, proceed directly to place order
+          await handlePlaceOrder()
         }
       } else {
         throw new Error(response.status_message || 'Failed to submit address')
@@ -239,16 +187,14 @@ function Checkout() {
     }
   }
 
-  const handleShippingMethodSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    
+  const handlePlaceOrder = async () => {
     const cartId = getCartId()
     if (!cartId) {
       setError('No cart found. Please add items to cart first.')
       return
     }
 
-    if (!selectedShippingMethod) {
+    if (!selectedShippingMethod && shippingMethods.length > 0) {
       setError('Please select a shipping method')
       return
     }
@@ -257,65 +203,16 @@ function Checkout() {
       setLoading(true)
       setError(null)
 
-      const response = await submitShippingMethod(cartId, selectedShippingMethod)
-      
-      // Handle successful submission
-      if (response.status_code === '0' || response.status_message === 'success') {
-        // Fetch checkout data to get confirmation information
-        await fetchConfirmationData(cartId)
-        // Move to confirmation step
-        setCurrentStep(3)
-      } else {
-        throw new Error(response.status_message || 'Failed to submit shipping method')
-      }
-      
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to process shipping method')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const fetchConfirmationData = async (cartId: string) => {
-    try {
-      setLoadingConfirmation(true)
-      const checkoutData = await getCheckoutData(cartId)
-      
-      // Access payload.checkout
-      const checkout = (checkoutData as { payload?: { checkout?: { address_detail?: AddressDetail; order?: { shipping?: ShippingMethod; total?: number } } } }).payload?.checkout
-      
-      if (checkout) {
-        // Get selected addresses
-        const addresses = checkout.address_detail?.addresses || []
-        const shippingAddr = addresses.find(addr => addr.is_selected)
-        const billingAddr = addresses.find(addr => addr.is_selected_billing_address)
+      // Submit shipping method if not already submitted and shipping methods are available
+      if (selectedShippingMethod && shippingMethods.length > 0) {
+        const shippingResponse = await submitShippingMethod(cartId, selectedShippingMethod)
         
-        setConfirmationData({
-          shippingAddress: shippingAddr,
-          billingAddress: billingAddr,
-          shipping: checkout.order?.shipping,
-          total: checkout.order?.total,
-        })
+        if (shippingResponse.status_code !== '0' && shippingResponse.status_message !== 'success') {
+          throw new Error(shippingResponse.status_message || 'Failed to submit shipping method')
+        }
       }
-    } catch (err) {
-      console.error('Failed to fetch confirmation data:', err)
-      setError('Failed to load confirmation data. Please refresh the page.')
-    } finally {
-      setLoadingConfirmation(false)
-    }
-  }
 
-  const handleConfirmOrder = async () => {
-    const cartId = getCartId()
-    if (!cartId) {
-      setError('No cart found. Please add items to cart first.')
-      return
-    }
-
-    try {
-      setLoading(true)
-      setError(null)
-
+      // Place order
       const response = await processOfflinePayment(cartId, 'cash_on_delivery')
       
       // Handle successful order placement
@@ -344,23 +241,10 @@ function Checkout() {
   return (
     <div className="checkout-container">
       <div className="checkout-header">
-        <button className="back-btn" onClick={() => {
-          if (currentStep === 2) {
-            setCurrentStep(1)
-          } else if (currentStep === 3) {
-            setCurrentStep(2)
-          } else {
-            navigate(-1)
-          }
-        }}>
+        <button className="back-btn" onClick={() => navigate(-1)}>
           ← Back
         </button>
         <h1>Checkout</h1>
-        <div className="checkout-steps">
-          <span className={currentStep >= 1 ? 'active' : ''}>1. Address</span>
-          <span className={currentStep >= 2 ? 'active' : ''}>2. Shipping</span>
-          <span className={currentStep >= 3 ? 'active' : ''}>3. Confirm</span>
-        </div>
       </div>
 
       {error && (
@@ -369,8 +253,7 @@ function Checkout() {
         </div>
       )}
 
-      {currentStep === 1 && (
-        <form onSubmit={handleSubmit} className="checkout-form">
+      <form onSubmit={addressSubmitted ? (e) => { e.preventDefault(); handlePlaceOrder(); } : handleAddressSubmit} className="checkout-form">
         {/* Shipping Address Section */}
         <div className="form-section">
           <h2>Shipping Address</h2>
@@ -687,148 +570,60 @@ function Checkout() {
           </div>
         )}
 
+        {/* Shipping Method Section - Show after address is submitted */}
+        {addressSubmitted && shippingMethods.length > 0 && (
+          <div className="form-section">
+            <h2>Select Shipping Method</h2>
+            <div className="shipping-methods">
+              {shippingMethods.map((method) => (
+                <div
+                  key={method.id}
+                  className={`shipping-method-card ${selectedShippingMethod === method.id ? 'selected' : ''}`}
+                  onClick={() => setSelectedShippingMethod(method.id)}
+                >
+                  <div className="shipping-method-radio">
+                    <input
+                      type="radio"
+                      id={`shipping_${method.id}`}
+                      name="shipping_method"
+                      value={method.id}
+                      checked={selectedShippingMethod === method.id}
+                      onChange={() => setSelectedShippingMethod(method.id)}
+                    />
+                    <label htmlFor={`shipping_${method.id}`}>
+                      <div className="shipping-method-name">{method.name}</div>
+                      <div className="shipping-method-details">
+                        <span className="shipping-method-rate">{formatPrice(method.rate)} USD</span>
+                        {method.delivery_time && (
+                          <span className="shipping-method-time">• {method.delivery_time}</span>
+                        )}
+                        {method.handling_fees > 0 && (
+                          <span className="shipping-method-fees">• Handling: {formatPrice(method.handling_fees)} USD</span>
+                        )}
+                      </div>
+                    </label>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         <div className="form-actions">
-          <button type="submit" className="submit-btn" disabled={loading}>
-            {loading ? 'Processing...' : 'Continue'}
+          <button 
+            type="submit" 
+            className="submit-btn" 
+            disabled={loading || (addressSubmitted && shippingMethods.length > 0 && !selectedShippingMethod)}
+          >
+            {loading 
+              ? 'Processing...' 
+              : addressSubmitted 
+                ? 'Place Order' 
+                : 'Continue'
+            }
           </button>
         </div>
       </form>
-      )}
-
-      {currentStep === 2 && (
-        <form onSubmit={handleShippingMethodSubmit} className="checkout-form">
-          <div className="form-section">
-            <h2>Select Shipping Method</h2>
-            {shippingMethods.length === 0 ? (
-              <p>No shipping methods available</p>
-            ) : (
-              <div className="shipping-methods">
-                {shippingMethods.map((method) => (
-                  <div
-                    key={method.id}
-                    className={`shipping-method-card ${selectedShippingMethod === method.id ? 'selected' : ''}`}
-                    onClick={() => setSelectedShippingMethod(method.id)}
-                  >
-                    <div className="shipping-method-radio">
-                      <input
-                        type="radio"
-                        id={`shipping_${method.id}`}
-                        name="shipping_method"
-                        value={method.id}
-                        checked={selectedShippingMethod === method.id}
-                        onChange={() => setSelectedShippingMethod(method.id)}
-                      />
-                      <label htmlFor={`shipping_${method.id}`}>
-                        <div className="shipping-method-name">{method.name}</div>
-                        <div className="shipping-method-details">
-                          <span className="shipping-method-rate">{formatPrice(method.rate)} USD</span>
-                          {method.delivery_time && (
-                            <span className="shipping-method-time">• {method.delivery_time}</span>
-                          )}
-                          {method.handling_fees > 0 && (
-                            <span className="shipping-method-fees">• Handling: {formatPrice(method.handling_fees)} USD</span>
-                          )}
-                        </div>
-                      </label>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          <div className="form-actions">
-            <button type="submit" className="submit-btn" disabled={loading || !selectedShippingMethod}>
-              {loading ? 'Processing...' : 'Continue'}
-            </button>
-          </div>
-        </form>
-      )}
-
-      {currentStep === 3 && (
-        <div className="checkout-form">
-          {loadingConfirmation ? (
-            <div className="form-section">
-              <p>Loading confirmation...</p>
-            </div>
-          ) : (
-            <>
-              {/* Shipping Address */}
-              <div className="form-section">
-                <h2>Shipping Address</h2>
-                {confirmationData.shippingAddress ? (
-                  <div className="confirmation-address">
-                    <p><strong>{confirmationData.shippingAddress.full_name}</strong></p>
-                    <p>{confirmationData.shippingAddress.address}</p>
-                    <p>{confirmationData.shippingAddress.city}, {confirmationData.shippingAddress.state_name} {confirmationData.shippingAddress.postal_code}</p>
-                    <p>{confirmationData.shippingAddress.country_name}</p>
-                    <p>Phone: {confirmationData.shippingAddress.telephone}</p>
-                    <p>Email: {confirmationData.shippingAddress.email_address}</p>
-                  </div>
-                ) : (
-                  <p>No shipping address found</p>
-                )}
-              </div>
-
-              {/* Billing Address */}
-              {confirmationData.billingAddress && !confirmationData.shippingAddress?.same_billing_address && (
-                <div className="form-section">
-                  <h2>Billing Address</h2>
-                  <div className="confirmation-address">
-                    <p><strong>{confirmationData.billingAddress.full_name}</strong></p>
-                    <p>{confirmationData.billingAddress.address}</p>
-                    <p>{confirmationData.billingAddress.city}, {confirmationData.billingAddress.state_name} {confirmationData.billingAddress.postal_code}</p>
-                    <p>{confirmationData.billingAddress.country_name}</p>
-                    <p>Phone: {confirmationData.billingAddress.telephone}</p>
-                    <p>Email: {confirmationData.billingAddress.email_address}</p>
-                  </div>
-                </div>
-              )}
-
-              {/* Shipping Method */}
-              <div className="form-section">
-                <h2>Shipping Method</h2>
-                {confirmationData.shipping ? (
-                  <div className="confirmation-shipping">
-                    <p><strong>{confirmationData.shipping.name}</strong></p>
-                    <p>Delivery Time: {confirmationData.shipping.delivery_time}</p>
-                    <p>Rate: {formatPrice(confirmationData.shipping.rate)} USD</p>
-                    {confirmationData.shipping.handling_fees > 0 && (
-                      <p>Handling Fees: {formatPrice(confirmationData.shipping.handling_fees)} USD</p>
-                    )}
-                  </div>
-                ) : (
-                  <p>No shipping method found</p>
-                )}
-              </div>
-
-              {/* Order Total */}
-              <div className="form-section">
-                <h2>Order Summary</h2>
-                <div className="order-summary">
-                  {confirmationData.total !== undefined && (
-                    <div className="order-total">
-                      <span>Total:</span>
-                      <span className="total-amount">{formatPrice(confirmationData.total)} USD</span>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <div className="form-actions">
-                <button 
-                  type="button" 
-                  className="submit-btn" 
-                  onClick={handleConfirmOrder}
-                  disabled={loading}
-                >
-                  {loading ? 'Processing...' : 'Confirm Order'}
-                </button>
-              </div>
-            </>
-          )}
-        </div>
-      )}
     </div>
   )
 }

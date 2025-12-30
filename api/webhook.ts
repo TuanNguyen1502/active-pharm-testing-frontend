@@ -26,19 +26,24 @@ export default async function handler(
   const queryString = queryParams.toString();
   const targetUrl = `${webhookBaseUrl}${queryString ? `?${queryString}` : ''}`;
 
-  // Get auth key from environment variable
+  // Get auth key from environment variable (required)
   const authKey = process.env.VITE_WEBHOOK_AUTH_KEY || process.env.WEBHOOK_AUTH_KEY;
 
+  if (!authKey) {
+    console.error('VITE_WEBHOOK_AUTH_KEY is not set in environment variables');
+    res.status(500).json({ 
+      error: 'Server configuration error: Webhook auth key is missing'
+    });
+    return;
+  }
+
   try {
-    // Prepare headers
+    // Prepare headers - always include auth key
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
       'Accept': 'application/json',
+      'key': authKey, // Always include auth key header
     };
-    
-    if (authKey) {
-      headers['key'] = authKey;
-    }
 
     // Forward the request to the webhook
     const response = await fetch(targetUrl, {
